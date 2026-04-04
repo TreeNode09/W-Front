@@ -2,14 +2,14 @@
 <div class="col" style="gap: 20px; padding-top: 20px;">
 
   <div class="row" style="gap: 20px; width: 100%;">
-    <Step num="1" title="选择生成起点" style="flex: 1;">
+    <Step num="1" title="选择生成起点" row style="flex: 1;">
       <el-radio-group v-model="isPrompt" style="padding-bottom: 2px;">
         <el-radio-button :value="true" border>提示词</el-radio-button>
         <el-radio-button :value="false" border>图像</el-radio-button>
       </el-radio-group>    
     </Step>
 
-    <Step v-if="isPrompt" num="2" title="选择水印类型" style="flex: 1;">
+    <Step v-if="isPrompt" num="2" title="选择水印类型" row style="flex: 1;">
       <div class="row" style="gap: 20px;">
         <el-switch v-model="usePRC" active-text="版权信息"/>
         <el-switch v-model="useWaterLo" active-text="篡改检测"/>         
@@ -19,7 +19,7 @@
 
   <Step v-if="isPrompt" num="3" title="指定数据">
 
-    <Subtitle title="密钥"><Key /></Subtitle>
+    <Subtitle v-if="usePRC" title="密钥ID"><Key /></Subtitle>
     <div v-if="usePRC" class="row" style="gap: 10px;">
       <el-input v-model="key" placeholder="首次生成前，请先获取密钥" />
       <el-button>获取</el-button>
@@ -61,7 +61,14 @@
   </Step>
 
   <Step :num="isPrompt ? 4 : 3" title="生成图像">
-    <DisplayData name="图像数量" :value="imageNum" />
+    <div class="row" style="justify-content: space-around;">
+      <DisplayData name="图像数量" :value="imageNum" />
+      <div style="width: 1px; height: 46px; background-color: var(--pale);"></div>
+      <DisplayData name="图像数量" :value="imageNum" />
+      <div style="width: 1px; height: 46px; background-color: var(--pale);"></div>
+      <DisplayData name="图像数量" :value="imageNum" />
+    </div>
+
     <el-button type="primary" plain :disabled="imageNum<=0" style="font-weight: bold;">
       开始生成
     </el-button>

@@ -11,7 +11,7 @@ export const COLOR_PALETTES: readonly ColorVars[] = [
     '--main': '#2796DF',
     '--dark': '#1C71A9',
     '--black': '#13222D',
-    '--shadowLight': 'rgba(160, 217, 255, 0.25)',
+    '--shadowLight': 'rgba(207, 236, 255, 0.25)',
     '--shadowDark': 'rgba(0, 100, 167, 0.25)'
   },
   {

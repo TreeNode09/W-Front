@@ -15,7 +15,7 @@ import Header from './Components/Header.vue'
 import EncodeView from './EncodeView.vue'
 import DecodeView from './DecodeView.vue'
 
-const isEncode = ref(false)
+const isEncode = ref(true)
 </script>
 
 <style>
@@ -57,5 +57,9 @@ hr {
 
 .el-button+.el-button {
   margin: 0;
+}
+
+.el-switch__label {
+  color: var(--el-text-color-placeholder);
 }
 </style>
