@@ -24,7 +24,7 @@ body {
 }
 
 * {
-  transition: all 0.5s;
+  transition: background-color 0.5s, box-shadow 0.5s, color 0.5s;
 }
 
 h1 {
@@ -61,5 +61,13 @@ hr {
 
 .el-switch__label {
   color: var(--el-text-color-placeholder);
+}
+
+.el-upload, .el-upload-list {
+  --el-upload-picture-card-size: 140px;
+}
+
+.el-upload-list--picture-card .el-upload-list__item {
+  margin: 0 10px 10px 0;
 }
 </style>

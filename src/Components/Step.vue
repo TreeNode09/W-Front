@@ -1,5 +1,6 @@
 <template>
-<div class="col" style="gap: 10px; padding: 20px; border: solid 1px var(--pale); border-radius: 10px;
+<div
+  class="col step-root" style="gap: 10px; padding: 20px; border: solid 1px var(--pale); border-radius: 10px;
   background-color: #FFF; box-shadow: var(--shadowDark) 0 0 4px;">
   <template v-if="row">
     <div class="row" style="align-items: center; gap: 10px; color: var(--main);">
@@ -29,6 +30,10 @@ const props = defineProps({
 </script>
 
 <style scoped>
+.step-root :deep(*) {
+  transition: all 0.5s;
+}
+
 .num {
   flex-shrink: 0;
   display: inline-flex;
@@ -46,12 +51,5 @@ const props = defineProps({
 .title {
   font-weight: bold;
   flex-shrink: 0;
-}
-
-.step-slot-inline {
-  flex: 1;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
 }
 </style>
