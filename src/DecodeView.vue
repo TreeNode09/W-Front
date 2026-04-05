@@ -8,5 +8,5 @@
 </template>
 
 <script setup lang="ts">
-import Step from './Components/Step.vue'
+import Step from './components/Step.vue'
 </script>

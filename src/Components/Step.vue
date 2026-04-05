@@ -1,6 +1,5 @@
 <template>
-<div
-  class="col step-root" style="gap: 10px; padding: 20px; border: solid 1px var(--pale); border-radius: 10px;
+<div class="col step-root" style="gap: 10px; padding: 20px; border: solid 1px var(--pale); border-radius: 10px;
   background-color: #FFF; box-shadow: var(--shadowDark) 0 0 4px;">
   <template v-if="row">
     <div class="row" style="align-items: center; gap: 10px; color: var(--main);">
@@ -46,10 +45,12 @@ const props = defineProps({
   line-height: 1;
   border: solid 1px var(--main);
   border-radius: 50%;
+  user-select: none;
 }
 
 .title {
   font-weight: bold;
   flex-shrink: 0;
+  user-select: none;
 }
 </style>

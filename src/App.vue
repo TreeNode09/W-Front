@@ -11,7 +11,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import Header from './Components/Header.vue'
+import Header from './components/Header.vue'
 import EncodeView from './EncodeView.vue'
 import DecodeView from './DecodeView.vue'
 
@@ -64,7 +64,7 @@ hr {
 }
 
 .el-upload, .el-upload-list {
-  --el-upload-picture-card-size: 140px;
+  --el-upload-picture-card-size: 149px;
 }
 
 .el-upload-list--picture-card .el-upload-list__item {
