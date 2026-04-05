@@ -1,7 +1,7 @@
 <template>
   <Step num="2" title="指定数据">
     <Subtitle title="图像"><Picture /></Subtitle>
-    <el-upload v-model:file-list="imageFileList" list-type="picture-card" multiple :auto-upload="false" accept="image/*"
+    <el-upload v-model:file-list="images" list-type="picture-card" multiple :auto-upload="false" accept="image/*"
       :limit="ENCODE_MAX_UPLOAD" :on-exceed="onImageExceed">
       <el-icon><Plus /></el-icon>
     </el-upload>
@@ -30,17 +30,17 @@ const props = defineProps(
   {"models": { type: Array<string> }
 })
 
-const { model, imageFileList } = storeToRefs(useEncode())
+const { model, images } = storeToRefs(useEncode())
 
 onMounted(async () => {
   await nextTick()
-  const next = imageFileList.value.map((item) => {
+  const next = images.value.map((item) => {
     const raw = item.raw
     if (!raw) return item
     if (item.url?.startsWith("blob:")) URL.revokeObjectURL(item.url)
     return { ...item, url: URL.createObjectURL(raw) }
   })
-  imageFileList.value = next
+  images.value = next
 })
 
 const toPictureCardFile = (raw: File): UploadUserFile => {
@@ -56,7 +56,7 @@ const toPictureCardFile = (raw: File): UploadUserFile => {
 const onImageExceed = (newFiles: File[], current: UploadUserFile[]) => {
   const slots = ENCODE_MAX_UPLOAD - current.length
   const added = newFiles.slice(0, Math.max(0, slots)).map(toPictureCardFile)
-  imageFileList.value = [...current, ...added]
+  images.value = [...current, ...added]
   showWarning("图像数量已达上限", `已保留前 ${ENCODE_MAX_UPLOAD} 张`)
 }
 </script>

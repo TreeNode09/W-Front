@@ -18,16 +18,15 @@ export const useEncode = defineStore("encode", () => {
   const key = ref("")
   const prompts = ref("")
   const model = ref("")
-  const imageFileList = ref<UploadUserFile[]>([])
+  const images = ref<UploadUserFile[]>([])
 
-  /** 提示词模式：有效行数（用于生成数量展示） */
-  const prmoptNum = computed(() => countPromptLines(prompts.value))
-  /** 图像模式：已选本地文件数 */
-  const imageNum = computed(() => imageFileList.value.length)
+  const promptNum = computed(() => countPromptLines(prompts.value))
+
+  const imageNum = computed(() => images.value.length)
 
   return {
     usePrompt, usePRC, useWaterLo,
-    key, prompts, model, imageFileList,
-    prmoptNum, imageNum,
+    key, prompts, model, images,
+    promptNum, imageNum,
   }
 })

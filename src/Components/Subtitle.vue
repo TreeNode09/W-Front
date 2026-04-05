@@ -1,5 +1,5 @@
 <template>
-<div class="row" style="gap: 5px; align-items: center;">
+<div class="row" style="gap: 5px; align-items: center; user-select: none;">
   <el-icon :size="16" color="var(--main)">
     <slot></slot>    
   </el-icon>
