@@ -7,7 +7,6 @@ export const useJob = defineStore("job", () => {
   const jobId = ref<string | null>(null)
   const procStatus = ref<ProcStatus>("idle")
 
-  /** 提交中、生成中或完成待确认：锁定顶栏与生成向导内控件 */
   const isBusy = computed(() =>
     ["submitting", "running", "finish"].includes(procStatus.value),
   )

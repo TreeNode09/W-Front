@@ -230,12 +230,14 @@ async function startGenerate() {
 
 const onGeneratePrc = (data: GenerateSocketPayload) => {
   if (!job.isCurrentJob(data.job_id)) return
-  encode.prcNum += 1
+  if (typeof data.current === "number") encode.prcNum = data.current
+  else encode.prcNum += 1
 }
 
 const onGenerateWaterLo = (data: GenerateSocketPayload) => {
   if (!job.isCurrentJob(data.job_id)) return
-  encode.waterloNum += 1
+  if (typeof data.current === "number") encode.waterloNum = data.current
+  else encode.waterloNum += 1
 }
 
 const onGenerateDone = (data: GenerateSocketPayload) => {
