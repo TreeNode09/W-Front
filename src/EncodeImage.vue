@@ -2,7 +2,7 @@
   <Step num="2" title="指定数据" :locked="props.locked">
     <Subtitle title="图像"><Picture /></Subtitle>
     <el-upload v-model:file-list="images" list-type="picture-card" multiple :auto-upload="false" accept="image/*"
-      :disabled="locked" :limit="ENCODE_MAX_UPLOAD" :on-exceed="onImageExceed">
+      :disabled="locked" :limit="ENCODE_MAX_UPLOAD" :on-exceed="onImageExceed" :on-preview="onPictureCardPreview">
       <el-icon><Plus /></el-icon>
     </el-upload>
 
@@ -11,14 +11,23 @@
       <el-radio-button v-for="m in models" :key="m" :value="m" border>{{ m }}</el-radio-button>
     </el-radio-group>
   </Step>
+
+  <Teleport to="body">
+    <div v-if="previewOpen" style="position: fixed; inset: 0; z-index: 3100;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px; box-sizing: border-box; background: rgba(0, 0, 0, 0.7);" @click.self="closePreview">
+      <img style="max-width: min(100%, 70vw); max-height: min(100%, 70vh); width: auto; height: auto;
+        object-fit: contain; border-radius: 10px; border: 10px solid #FFF;" :src="previewUrl" @click.stop />
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
 import { Cpu, Picture, Plus } from "@element-plus/icons-vue"
-import type { UploadRawFile, UploadUserFile } from "element-plus"
+import type { UploadProps, UploadRawFile, UploadUserFile } from "element-plus"
 import { genFileId } from "element-plus"
 import { storeToRefs } from "pinia"
-import { computed, nextTick, onMounted } from "vue"
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
 
 import { ENCODE_MAX_UPLOAD, useEncode } from "./stores/encode"
 import { showWarning } from "./api/message"
@@ -32,6 +41,38 @@ const props = defineProps({
 })
 
 const locked = computed(() => props.locked ?? false)
+
+const previewOpen = ref(false)
+const previewUrl = ref("")
+
+function closePreview() {
+  previewOpen.value = false
+  previewUrl.value = ""
+}
+
+const onPictureCardPreview: UploadProps["onPreview"] = (uploadFile) => {
+  previewUrl.value = uploadFile.url ?? ""
+  previewOpen.value = true
+}
+
+let removeEsc: (() => void) | null = null
+watch(previewOpen, (open) => {
+  removeEsc?.()
+  removeEsc = null
+  if (!open) return
+  const onEsc = (e: KeyboardEvent) => {
+    if (e.key === "Escape") {
+      e.preventDefault()
+      closePreview()
+    }
+  }
+  document.addEventListener("keydown", onEsc)
+  removeEsc = () => document.removeEventListener("keydown", onEsc)
+})
+
+onUnmounted(() => {
+  removeEsc?.()
+})
 
 const { model, images } = storeToRefs(useEncode())
 
