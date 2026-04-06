@@ -1,13 +1,13 @@
 <template>
-  <Step num="2" title="指定数据">
+  <Step num="2" title="指定数据" :locked="props.locked">
     <Subtitle title="图像"><Picture /></Subtitle>
     <el-upload v-model:file-list="images" list-type="picture-card" multiple :auto-upload="false" accept="image/*"
-      :limit="ENCODE_MAX_UPLOAD" :on-exceed="onImageExceed">
+      :disabled="locked" :limit="ENCODE_MAX_UPLOAD" :on-exceed="onImageExceed">
       <el-icon><Plus /></el-icon>
     </el-upload>
 
     <Subtitle title="模型"><Cpu /></Subtitle>
-    <el-radio-group v-model="model">
+    <el-radio-group v-model="model" :disabled="locked">
       <el-radio-button v-for="m in models" :key="m" :value="m" border>{{ m }}</el-radio-button>
     </el-radio-group>
   </Step>
@@ -18,7 +18,7 @@ import { Cpu, Picture, Plus } from "@element-plus/icons-vue"
 import type { UploadRawFile, UploadUserFile } from "element-plus"
 import { genFileId } from "element-plus"
 import { storeToRefs } from "pinia"
-import { nextTick, onMounted } from "vue"
+import { computed, nextTick, onMounted } from "vue"
 
 import { ENCODE_MAX_UPLOAD, useEncode } from "./stores/encode"
 import { showWarning } from "./api/message"
@@ -26,9 +26,12 @@ import { showWarning } from "./api/message"
 import Step from "./components/Step.vue"
 import Subtitle from "./components/Subtitle.vue"
 
-const props = defineProps(
-  {"models": { type: Array<string> }
+const props = defineProps({
+  locked: { type: Boolean, default: false },
+  models: { type: Array<string> },
 })
+
+const locked = computed(() => props.locked ?? false)
 
 const { model, images } = storeToRefs(useEncode())
 

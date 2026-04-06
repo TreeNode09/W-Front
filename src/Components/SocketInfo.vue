@@ -14,24 +14,20 @@ import { getSocket, socketError, socketStatus, watchStatus } from "@/api/socket"
 
 const statusLabel = computed(() => {
   switch (socketStatus.value) {
-    case "online":
-      return "已连接"
-    case "pending":
-      return "正在连接…"
-    case "reconnecting":
-      return "连接异常，重试中…"
-    case "failed":
-      return "连接失败"
-    default:
-      return "未连接"
+    case "online": return "已连接"
+    case "pending": return "正在连接…"
+    case "reconnecting": return "连接异常，重试中…"
+    case "failed": return "连接失败"
+    default: return "未连接"
   }
 })
 
 const detailTitle = computed(() => {
-  if (socketError.value && (socketStatus.value === "failed" || socketStatus.value === "reconnecting")) {
-    return `${socketStatus.value === "reconnecting" ? "连接异常" : "连接失败"}：${socketError.value}`
+  switch (socketStatus.value) {
+    case "reconnecting": return `连接异常：${socketError.value}`
+    case "failed": return `连接失败：${socketError.value}`
+    default: return "Socket.IO 当前的连接状态"
   }
-  return "Socket.IO 当前的连接状态"
 })
 
 let endWatch: (() => void) | undefined
@@ -61,7 +57,7 @@ onUnmounted(() => {
 }
 
 .dot.reconnecting {
-  background-color: #ea580c;
+  background-color: var(--el-color-warning);
   animation: pulse 1.2s ease-in-out infinite;
 }
 

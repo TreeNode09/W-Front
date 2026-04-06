@@ -1,24 +1,24 @@
 <template>
-  <Step num="3" title="指定数据">
+  <Step num="3" title="指定数据" :locked="props.locked">
 
     <Subtitle v-if="usePRC" title="密钥ID"><Key /></Subtitle>
     <div v-if="usePRC" class="row" style="gap: 10px;">
-      <el-input v-model="key" placeholder="首次生成前，请先获取密钥" />
-      <el-button :loading="keyLoading" @click="getKey">获取</el-button>
+      <el-input v-model="key" :disabled="locked" placeholder="首次生成前，请先获取密钥" />
+      <el-button :disabled="locked" :loading="keyLoading" @click="getKey">获取</el-button>
       <el-button disabled>导入</el-button>
     </div>
 
     <Subtitle title="提示词"><ChatDotSquare /></Subtitle>
     <div class="row" style="gap: 10px;">
-      <el-input v-model="prompts" class="textarea" type="textarea" :rows="3"
+      <el-input v-model="prompts" class="textarea" type="textarea" :rows="3" :disabled="locked"
         placeholder="可输入多条提示词，或设定数量后点击“随机”，从数据集拉取"/>
       <div class="col" style="gap: 10px; align-items: stretch;">
         <el-button disabled>导入</el-button>
         <div class="row" style="align-items: stretch; gap: 10px; width: 200px;">
-          <el-button :disabled="promptFetchCount<=0" :loading="promptsLoading" @click="getPrompts">
+          <el-button :disabled="locked || promptFetchCount<=0" :loading="promptsLoading" @click="getPrompts">
             随机
           </el-button>
-          <el-input-number v-model="promptFetchCount" :min="0" :max="ENCODE_MAX_UPLOAD" controls-position="right"
+          <el-input-number v-model="promptFetchCount" :disabled="locked" :min="0" :max="ENCODE_MAX_UPLOAD" controls-position="right"
             style="max-width: 130px; flex-shrink: 1;">
             <template #suffix>
               <span>条</span>
@@ -29,7 +29,7 @@
     </div>
 
     <Subtitle title="模型"><Cpu /></Subtitle>
-    <el-radio-group v-model="model">
+    <el-radio-group v-model="model" :disabled="locked">
       <el-radio-button v-for="m in models" :key="m" :value="m" border>{{ m }}</el-radio-button>
     </el-radio-group>
 
@@ -39,7 +39,7 @@
 <script setup lang="ts">
 import { ChatDotSquare, Cpu, Key } from "@element-plus/icons-vue"
 import { storeToRefs } from "pinia"
-import { ref } from "vue"
+import { computed, ref } from "vue"
 
 import { ENCODE_MAX_UPLOAD, useEncode } from "./stores/encode"
 import { showSuccess, showError } from "./api/message"
@@ -48,9 +48,12 @@ import { http } from "./api/http"
 import Step from "./components/Step.vue"
 import Subtitle from "./components/Subtitle.vue"
 
-const props = defineProps(
-  {"models": { type: Array<string> }
+const props = defineProps({
+  locked: { type: Boolean, default: false },
+  models: { type: Array<string> },
 })
+
+const locked = computed(() => props.locked ?? false)
 
 const { usePRC, key, prompts, model } = storeToRefs(useEncode())
 

@@ -3,6 +3,17 @@ import { ref } from "vue"
 
 import { baseURL } from "./http"
 
+// Used during image gereration
+export type GenerateSocketPayload = {
+  job_id?: string
+  current?: number
+  total?: number
+  count?: number
+  images?: string[]
+  image?: string
+  error?: string
+}
+
 // Used in the socket status indicator
 export type SocketStatus = "online" | "offline" | "pending" | "reconnecting" | "failed"
 
@@ -11,7 +22,7 @@ export const socketError = ref<string | null>(null)
 
 let hadError = false
 
-function setErrorFromUnknown(err: unknown) {
+const setError = (err: unknown) => {
   hadError = true
   if (err instanceof Error && err.message) socketError.value = err.message
   else if (typeof err === "string" && err) socketError.value = err
@@ -25,49 +36,33 @@ const updateStatus = (s: Socket) => {
     socketStatus.value = "online"
     return
   }
-  // connect_error 后客户端会重试，此时 s.active 仍为 true；不能再显示成「正在连接」
-  if (hadError && s.active) {
-    socketStatus.value = "reconnecting"
-    return
-  }
-  if (s.active) {
-    socketStatus.value = "pending"
-    return
-  }
-  if (hadError) {
-    socketStatus.value = "failed"
-    return
-  }
-  socketStatus.value = "offline"
+  socketStatus.value =
+    hadError && s.active ? "reconnecting"
+    : s.active ? "pending"
+    : hadError ? "failed"
+    : "offline"
 }
 
 export function watchStatus(): () => void {
   const s = getSocket()
-  const onSync = () => updateStatus(s)
-  const onConnectError = (err: Error) => {
-    setErrorFromUnknown(err)
-    updateStatus(s)
-  }
-  const onSocketError = (err: Error) => {
-    setErrorFromUnknown(err)
-    updateStatus(s)
-  }
-  const onManagerError = (err: unknown) => {
-    setErrorFromUnknown(err)
+  const sync = () => updateStatus(s)
+  const onError = (err: unknown) => {
+    setError(err)
     updateStatus(s)
   }
   updateStatus(s)
-  s.on("connect", onSync)
-  s.on("disconnect", onSync)
-  s.on("connect_error", onConnectError)
-  s.on("error", onSocketError)
-  s.io.on("error", onManagerError)
+  s.on("connect", sync)
+  s.on("disconnect", sync)
+  s.on("connect_error", onError)
+  s.on("error", onError)
+  s.io.on("error", onError)
+
   return () => {
-    s.off("connect", onSync)
-    s.off("disconnect", onSync)
-    s.off("connect_error", onConnectError)
-    s.off("error", onSocketError)
-    s.io.off("error", onManagerError)
+    s.off("connect", sync)
+    s.off("disconnect", sync)
+    s.off("connect_error", onError)
+    s.off("error", onError)
+    s.io.off("error", onError)
   }
 }
 
@@ -77,8 +72,8 @@ export function watchStatus(): () => void {
  *
  * | 操作 | HTTP | 当前前端 | 后续可做（Socket 事件，payload 均含 job_id） |
  * |------|------|----------|-----------------------------------------------|
- * | 提示词生成 | `POST /generate/prompts` + body.socket_id | 发到返回 202 | `generate_prc`、`generate_waterlo`、`generate_done`、`generate_error` |
- * | 图像只打水印 | `POST /generate/images` + form socket_id | 同上 | `generate_waterlo`、`generate_done`、`generate_error` |
+ * | 提示词生成 | `POST /generate/prompts` + body.socket_id | 发到返回 202 | 先 `generate_prc` 再（若开启）`generate_waterlo`；最后 `generate_done`（`images` base64）、`generate_error` |
+ * | 图像只打水印 | `POST /generate/images` + form socket_id | 同上 | 仅 `generate_waterlo`、`generate_done`、`generate_error` |
  * | PRC 解码 | `POST /decode/prc` | （Decode 页） | `decode_prc`、`decode_done`、`decode_error` |
  * | WaterLo 解码 | `POST /decode/waterlo` | （Decode 页） | `decode_waterlo`、`decode_done`、`decode_error` |
  *

@@ -1,7 +1,7 @@
 <template>
 <header class="row" style="padding: 0 20px; background-color: var(--main);">
   <div style="width: 180px; padding: 10px 0;">水印系统</div>
-  <div class="row" :class="{ locked: props.switchDisabled }">
+  <div class="row" :class="{ locked: props.locked }">
     <div class="option" :class="{ selected: model }" @click="onGenerate">生成</div>
     <div class="option" :class="{ selected: !model }" @click="onDetect">检测</div>
   </div>
@@ -12,20 +12,20 @@
 import { useColors } from '@/stores/colors'
 
 const props = defineProps({
-  switchDisabled: {type: Boolean}
+  locked: {type: Boolean}
 })
 
 const colors = useColors()
 const model = defineModel<boolean>({ required: true })
 
 const onGenerate = () => {
-  if (props.switchDisabled) return
+  if (props.locked) return
   colors.setPaletteIndex(0)
   model.value = true
 }
 
 const onDetect = () => {
-  if (props.switchDisabled) return
+  if (props.locked) return
   colors.setPaletteIndex(1)
   model.value = false
 }

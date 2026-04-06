@@ -1,6 +1,6 @@
 <template>
 <div class="col step-root" style="gap: 10px; padding: 20px; border: solid 1px var(--pale); border-radius: 10px;
-  background-color: #FFF; box-shadow: var(--shadowDark) 0 0 4px;">
+  box-shadow: var(--shadowDark) 0 0 4px;" :style="{backgroundColor: props.locked ? 'var(--el-fill-color-light)' : '#FFF'}">
   <template v-if="row">
     <div class="row" style="align-items: center; gap: 10px; color: var(--main);">
       <span class="num">{{ num }}</span>
@@ -24,7 +24,8 @@
 const props = defineProps({
   num: {type: [String, Number]},
   title: {type: String},
-  row: {type: Boolean, default: false}
+  row: {type: Boolean, default: false},
+  locked: {type: Boolean, default: false}
 })
 </script>
 

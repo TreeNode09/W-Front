@@ -1,8 +1,8 @@
 <template>
-<div>
-  <span style="user-select: none; margin-right: 10px;">{{ props.name }}:</span>
-  <span style="margin-right: 5px; color: var(--main); font-size: 32px; font-weight: bold;">{{ props.value }}</span>
-  <span>{{ props.unit }}</span>
+<div class="row" style="gap: 5px; align-items: center;">
+  <div style="user-select: none;">{{ props.name }}：</div>
+  <slot></slot>
+  <div style="user-select: none;">{{ props.unit }}</div>
 </div>
 </template>
 
