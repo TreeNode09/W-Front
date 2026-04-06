@@ -1,5 +1,5 @@
 <template>
-<div class="col" style="gap: 20px; min-width: 780px; padding: 20px 0;">
+<div ref="encodeRoot" class="col" style="gap: 20px; min-width: 780px; padding: 20px 0;">
 
   <div class="row" style="gap: 20px; width: 100%;">
     <Step num="1" title="选择生成起点" row style="flex: 1;" :locked="isBusy">
@@ -60,18 +60,19 @@
     </div>
   </Step>
 
+  <div ref="encodeScrollAnchor" class="encode-scroll-anchor" aria-hidden="true" />
 </div>
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from "pinia"
-import { computed, onMounted } from "vue"
+import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
 import { ChatDotSquare, Picture } from "@element-plus/icons-vue"
 
 import { http } from "./api/http"
 import { showError, showSuccess } from "./api/message"
-import { getSocketId, socketStatus } from "./api/socket"
-import { ENCODE_MAX_UPLOAD, useEncode } from "./stores/encode"
+import { getSocket, getSocketId, socketStatus, type GenerateSocketPayload } from "./api/socket"
+import { ENCODE_MAX_UPLOAD, toDisplayImageSrc, useEncode } from "./stores/encode"
 import { useJob } from "./stores/job"
 import EncodeImage from "./EncodeImage.vue"
 import EncodePrompt from "./EncodePrompt.vue"
@@ -81,6 +82,20 @@ import DisplayData from "./components/DisplayData.vue"
 import Subtitle from "./components/Subtitle.vue"
 
 const models = ["Stable Diffusion 2.1", "Unstable 3.4"]
+const encodeScrollAnchor = ref<HTMLElement | null>(null)
+const encodeRoot = ref<HTMLElement | null>(null)
+
+const scrollEncodeToBottom = () => {
+  nextTick(() => {
+    encodeScrollAnchor.value?.scrollIntoView({ behavior: "smooth", block: "end" })
+  })
+}
+
+const scrollEncodeToTop = () => {
+  nextTick(() => {
+    encodeRoot.value?.scrollIntoView({ behavior: "smooth", block: "start" })
+  })
+}
 
 const encode = useEncode()
 const {
@@ -125,6 +140,7 @@ const onButtonClick = () => {
   if (procStatus.value === "finish") {
     encode.results = []
     job.setJob("idle")
+    scrollEncodeToTop()
     return
   }
   startGenerate()
@@ -212,8 +228,55 @@ async function startGenerate() {
   }
 }
 
+const onGeneratePrc = (data: GenerateSocketPayload) => {
+  if (!job.isCurrentJob(data.job_id)) return
+  encode.prcNum += 1
+}
+
+const onGenerateWaterLo = (data: GenerateSocketPayload) => {
+  if (!job.isCurrentJob(data.job_id)) return
+  encode.waterloNum += 1
+}
+
+const onGenerateDone = (data: GenerateSocketPayload) => {
+  if (!job.isCurrentJob(data.job_id)) return
+  if (Array.isArray(data.images) && data.images.length > 0) {
+    encode.results = data.images.map(toDisplayImageSrc).filter(Boolean)
+  }
+  else if (data.image) {
+    const src = toDisplayImageSrc(data.image)
+    if (src) encode.results = [...encode.results, src]
+  }
+  encode.prcNum = 0
+  encode.waterloNum = 0
+  job.setJob("finish")
+  const n = data.count ?? encode.results.length
+  showSuccess("生成完成", `共 ${n} 张`)
+  scrollEncodeToBottom()
+}
+
+const onGenerateError = (data: GenerateSocketPayload) => {
+  if (!job.isCurrentJob(data.job_id)) return
+  job.setJob("idle")
+  showError("生成失败", data.error ?? "未知错误")
+}
+
 onMounted(() => {
   if (!model.value) model.value = models[0] ?? ""
+  getSocket()
+  const socket = getSocket()
+  socket.on("generate_prc", onGeneratePrc)
+  socket.on("generate_waterlo", onGenerateWaterLo)
+  socket.on("generate_done", onGenerateDone)
+  socket.on("generate_error", onGenerateError)
+})
+
+onUnmounted(() => {
+  const socket = getSocket()
+  socket.off("generate_prc", onGeneratePrc)
+  socket.off("generate_waterlo", onGenerateWaterLo)
+  socket.off("generate_done", onGenerateDone)
+  socket.off("generate_error", onGenerateError)
 })
 </script>
 
@@ -228,5 +291,11 @@ onMounted(() => {
 
 .encode-result-thumb :deep(.el-image__inner) {
   object-fit: contain;
+}
+
+.encode-scroll-anchor {
+  height: 1px;
+  width: 100%;
+  flex-shrink: 0;
 }
 </style>
