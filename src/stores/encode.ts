@@ -10,14 +10,6 @@ function countPromptLines(s: string): number {
   return normalized.trimEnd().split("\n").length
 }
 
-/** 后端可能返回裸 base64、data URL 或 http(s) */
-export function toDisplayImageSrc(s: string): string {
-  const t = s.trim()
-  if (!t) return ""
-  if (/^(data:|blob:|https?:\/\/)/i.test(t)) return t
-  return `data:image/png;base64,${t}`
-}
-
 export const useEncode = defineStore("encode", () => {
   const usePrompt = ref(true)
   const usePRC = ref(true)

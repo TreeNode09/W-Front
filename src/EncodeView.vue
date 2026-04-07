@@ -1,5 +1,5 @@
 <template>
-<div ref="encodeRoot" class="col" style="gap: 20px; min-width: 780px; padding: 20px 0;">
+<div ref="encodeTopAnchor" class="col" style="gap: 20px; min-width: 780px; padding: 20px 0;">
 
   <div class="row" style="gap: 20px; width: 100%;">
     <Step num="1" title="选择生成起点" row style="flex: 1;" :locked="isBusy">
@@ -26,14 +26,15 @@
   <EncodePrompt v-if="usePrompt" :models="models" :locked="isBusy" />
   <EncodeImage v-if="!usePrompt" :models="models" :locked="isBusy" />
 
-  <Step :num="usePrompt ? 4 : 3" title="生成图像">
+  <Step ref="encodeBottomAnchor" :num="usePrompt ? 4 : 3" title="生成图像">
     <div class="row" style="justify-content: center; gap: 40px;">
       <DisplayData name="图像总数" unit="张">
         <div style="font-size: 32px; font-weight: bold; color: var(--main);">{{ currentNum }}</div>
       </DisplayData>
       <div style="width: 1px; height: 46px; background-color: var(--pale);"></div>
       <DisplayData name="生成进度">
-        <div v-if="procStatus === 'idle' || procStatus === 'finish'" style="font-weight: bold; font-size: 32px; color: var(--main);">—</div>
+        <div v-if="['idle', 'finish'].includes(procStatus)"
+          style="font-weight: bold; font-size: 32px; color: var(--main);">--</div>
         <div v-else class="row" style="gap: 5px; align-items: center; font-weight: bold; color: var(--main);">
           <template v-if="usePrompt">
             <div style="font-size: 12px;">生成图像<br>{{usePRC ? "版权信息" : ""}}</div>
@@ -53,14 +54,15 @@
       {{ buttonText }}
     </el-button>
 
-    <Subtitle v-if="results.length" title="生成结果" style="margin-top: 10px;"><Picture /></Subtitle>
-    <div v-if="results.length" class="row" style="flex-wrap: wrap; gap: 10px;">
-      <el-image v-for="(src, i) in results" :key="`${i}-${src.slice(0, 48)}`" :src="src"
-        :preview-src-list="results" :initial-index="i" fit="contain" class="encode-result-thumb"/>
-    </div>
+    <template v-if="procStatus==='finish'">
+      <Subtitle title="生成结果" style="margin-top: 10px;"><Picture /></Subtitle>
+      <div class="row" style="flex-wrap: wrap; gap: 10px;">
+        <el-image v-for="(src, i) in results" :key="`${i}-${src.slice(0, 48)}`" :src="src"
+          :preview-src-list="results" :initial-index="i" fit="contain" class="encode-result-thumb"/>
+      </div>      
+    </template>
   </Step>
 
-  <div ref="encodeScrollAnchor" class="encode-scroll-anchor" aria-hidden="true" />
 </div>
 </template>
 
@@ -71,9 +73,9 @@ import { ChatDotSquare, Picture } from "@element-plus/icons-vue"
 
 import { http } from "./api/http"
 import { showError, showSuccess } from "./api/message"
-import { getSocket, getSocketId, socketStatus, type GenerateSocketPayload } from "./api/socket"
-import { ENCODE_MAX_UPLOAD, toDisplayImageSrc, useEncode } from "./stores/encode"
-import { useJob } from "./stores/job"
+import { getSocket, getSocketId, socketStatus, type EncodeSocketPayload } from "./api/socket"
+import { ENCODE_MAX_UPLOAD, useEncode } from "./stores/encode"
+import { toDisplayImageSrc, useJob } from "./stores/job"
 import EncodeImage from "./EncodeImage.vue"
 import EncodePrompt from "./EncodePrompt.vue"
 
@@ -82,18 +84,18 @@ import DisplayData from "./components/DisplayData.vue"
 import Subtitle from "./components/Subtitle.vue"
 
 const models = ["Stable Diffusion 2.1", "Unstable 3.4"]
-const encodeScrollAnchor = ref<HTMLElement | null>(null)
-const encodeRoot = ref<HTMLElement | null>(null)
+const encodeTopAnchor = ref<HTMLElement | null>(null)
+const encodeBottomAnchor = ref<{ $el?: HTMLElement } | null>(null)
 
-const scrollEncodeToBottom = () => {
+const scrollUp = () => {
   nextTick(() => {
-    encodeScrollAnchor.value?.scrollIntoView({ behavior: "smooth", block: "end" })
+    encodeTopAnchor.value?.scrollIntoView({ behavior: "smooth", block: "start" })
   })
 }
 
-const scrollEncodeToTop = () => {
+const scrollDown = () => {
   nextTick(() => {
-    encodeRoot.value?.scrollIntoView({ behavior: "smooth", block: "start" })
+    encodeBottomAnchor.value?.$el?.scrollIntoView({ behavior: "smooth", block: "start" })
   })
 }
 
@@ -101,7 +103,7 @@ const encode = useEncode()
 const {
   usePrompt, usePRC, useWaterLo, model, promptNum, imageNum,
   key, prompts, images,
-  prcNum, waterloNum, results,
+  prcNum, waterloNum, results
 } = storeToRefs(encode)
 const job = useJob()
 const { procStatus, isBusy } = storeToRefs(job)
@@ -115,7 +117,7 @@ const currentNum = computed(() =>
   usePrompt.value ? promptNum.value : imageNum.value,
 )
 
-const canGenerate = computed(() => {
+const canStartEncode = computed(() => {
   if (procStatus.value !== "idle" || socketStatus.value !== "online") return false
   if (!model.value.trim()) return false
   if (currentNum.value <= 0 || currentNum.value > ENCODE_MAX_UPLOAD) return false
@@ -133,21 +135,21 @@ const buttonText = computed(() => {
 })
 
 const isClickable = computed(() => {
-  return procStatus.value !== 'finish' && (!canGenerate.value || isBusy.value)
+  return procStatus.value !== 'finish' && (!canStartEncode.value || isBusy.value)
 })
 
 const onButtonClick = () => {
   if (procStatus.value === "finish") {
     encode.results = []
     job.setJob("idle")
-    scrollEncodeToTop()
+    scrollUp()
     return
   }
   startGenerate()
 }
 
 async function startGenerate() {
-  if (!canGenerate.value || isBusy.value) return
+  if (!canStartEncode.value || isBusy.value) return
   if (currentNum.value <= 0 || currentNum.value > ENCODE_MAX_UPLOAD) return
 
   let lines: string[] | null = null
@@ -228,19 +230,19 @@ async function startGenerate() {
   }
 }
 
-const onGeneratePrc = (data: GenerateSocketPayload) => {
+const onGeneratePrc = (data: EncodeSocketPayload) => {
   if (!job.isCurrentJob(data.job_id)) return
   if (typeof data.current === "number") encode.prcNum = data.current
   else encode.prcNum += 1
 }
 
-const onGenerateWaterLo = (data: GenerateSocketPayload) => {
+const onGenerateWaterLo = (data: EncodeSocketPayload) => {
   if (!job.isCurrentJob(data.job_id)) return
   if (typeof data.current === "number") encode.waterloNum = data.current
   else encode.waterloNum += 1
 }
 
-const onGenerateDone = (data: GenerateSocketPayload) => {
+const onGenerateDone = (data: EncodeSocketPayload) => {
   if (!job.isCurrentJob(data.job_id)) return
   if (Array.isArray(data.images) && data.images.length > 0) {
     encode.results = data.images.map(toDisplayImageSrc).filter(Boolean)
@@ -254,10 +256,10 @@ const onGenerateDone = (data: GenerateSocketPayload) => {
   job.setJob("finish")
   const n = data.count ?? encode.results.length
   showSuccess("生成完成", `共 ${n} 张`)
-  scrollEncodeToBottom()
+  scrollDown()
 }
 
-const onGenerateError = (data: GenerateSocketPayload) => {
+const onGenerateError = (data: EncodeSocketPayload) => {
   if (!job.isCurrentJob(data.job_id)) return
   job.setJob("idle")
   showError("生成失败", data.error ?? "未知错误")
@@ -295,9 +297,4 @@ onUnmounted(() => {
   object-fit: contain;
 }
 
-.encode-scroll-anchor {
-  height: 1px;
-  width: 100%;
-  flex-shrink: 0;
-}
 </style>

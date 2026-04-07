@@ -1,12 +1,14 @@
 <template>
   <Step num="3" title="指定数据" :locked="props.locked">
 
-    <Subtitle v-if="usePRC" title="密钥ID"><Key /></Subtitle>
-    <div v-if="usePRC" class="row" style="gap: 10px;">
-      <el-input v-model="key" :disabled="locked" placeholder="首次生成前，请先获取密钥" />
-      <el-button :disabled="locked" :loading="keyLoading" @click="getKey">获取</el-button>
-      <el-button disabled>导入</el-button>
-    </div>
+    <template v-if="usePRC">
+      <Subtitle  title="密钥ID"><Key /></Subtitle>
+      <div class="row" style="gap: 10px;">
+        <el-input v-model="key" :disabled="locked" placeholder="首次生成前，请先获取密钥" />
+        <el-button :disabled="locked" :loading="keyLoading" @click="getKey">获取</el-button>
+        <el-button disabled>导入</el-button>
+      </div>      
+    </template>
 
     <Subtitle title="提示词"><ChatDotSquare /></Subtitle>
     <div class="row" style="gap: 10px;">
@@ -18,8 +20,8 @@
           <el-button :disabled="locked || promptFetchCount<=0" :loading="promptsLoading" @click="getPrompts">
             随机
           </el-button>
-          <el-input-number v-model="promptFetchCount" :disabled="locked" :min="0" :max="ENCODE_MAX_UPLOAD" controls-position="right"
-            style="max-width: 130px; flex-shrink: 1;">
+          <el-input-number v-model="promptFetchCount" controls-position="right"
+            :disabled="locked" :min="0" :max="ENCODE_MAX_UPLOAD" style="max-width: 130px; flex-shrink: 1;">
             <template #suffix>
               <span>条</span>
             </template>

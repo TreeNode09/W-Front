@@ -1,8 +1,14 @@
 <template>
   <Step num="2" title="指定数据" :locked="props.locked">
-    <Subtitle title="图像"><Picture /></Subtitle>
+    <template v-if="usePRC">
+      <Subtitle title="密钥 ID"><Key /></Subtitle>
+      <div class="row" style="gap: 10px; margin-top: 6px;">
+        <el-input v-model="key" :disabled="locked" placeholder="请输入用于解码的密钥 ID" />
+      </div>
+    </template>
+    <Subtitle title="水印图像"><Picture /></Subtitle>
     <el-upload v-model:file-list="images" list-type="picture-card" multiple :auto-upload="false" accept="image/*"
-      :disabled="locked" :limit="ENCODE_MAX_UPLOAD" :on-exceed="onImageExceed" :on-preview="onPictureCardPreview">
+      :disabled="locked" :limit="DECODE_MAX_UPLOAD" :on-exceed="onImageExceed" :on-preview="onPictureCardPreview">
       <el-icon><Plus /></el-icon>
     </el-upload>
 
@@ -28,19 +34,20 @@ import type { UploadProps, UploadRawFile, UploadUserFile } from "element-plus"
 import { genFileId } from "element-plus"
 import { storeToRefs } from "pinia"
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
+import { Key } from "@element-plus/icons-vue"
 
-import { ENCODE_MAX_UPLOAD, useEncode } from "./stores/encode"
 import { showWarning } from "./api/message"
+import { DECODE_MAX_UPLOAD, useDecode } from "./stores/decode"
 
 import Step from "./components/Step.vue"
 import Subtitle from "./components/Subtitle.vue"
 
 const props = defineProps({
-  locked: { type: Boolean, default: false },
-  models: { type: Array<string> },
+  models: {type: Array<string>},
+  locked: {type: Boolean, default: false}
 })
 
-const { model, images } = storeToRefs(useEncode())
+const { usePRC, key, images, model } = storeToRefs(useDecode())
 
 const locked = computed(() => props.locked ?? false)
 
@@ -98,9 +105,9 @@ const toPictureCardFile = (raw: File): UploadUserFile => {
 }
 
 const onImageExceed = (newFiles: File[], current: UploadUserFile[]) => {
-  const slots = ENCODE_MAX_UPLOAD - current.length
+  const slots = DECODE_MAX_UPLOAD - current.length
   const added = newFiles.slice(0, Math.max(0, slots)).map(toPictureCardFile)
   images.value = [...current, ...added]
-  showWarning("图像数量已达上限", `已保留前 ${ENCODE_MAX_UPLOAD} 张`)
+  showWarning("图像数量已达上限", `已保留前 ${DECODE_MAX_UPLOAD} 张`)
 }
 </script>

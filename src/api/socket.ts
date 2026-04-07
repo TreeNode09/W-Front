@@ -4,13 +4,26 @@ import { ref } from "vue"
 import { baseURL } from "./http"
 
 // Used during image gereration
-export type GenerateSocketPayload = {
+export type EncodeSocketPayload = {
   job_id?: string
   current?: number
   total?: number
   count?: number
   images?: string[]
   image?: string
+  error?: string
+}
+
+// Used during watermark decoding
+export type DecodeSocketPayload = {
+  job_id?: string
+  current?: number
+  total?: number
+  count?: number
+  method?: "prc" | "waterlo"
+  results?: Array<Record<string, unknown>>
+  maps?: string[]
+  preds?: unknown[]
   error?: string
 }
 
@@ -74,8 +87,7 @@ export function watchStatus(): () => void {
  * |------|------|----------|-----------------------------------------------|
  * | 提示词生成 | `POST /generate/prompts` + body.socket_id | 发到返回 202 | 先 `generate_prc` 再（若开启）`generate_waterlo`；最后 `generate_done`（`images` base64）、`generate_error` |
  * | 图像只打水印 | `POST /generate/images` + form socket_id | 同上 | 仅 `generate_waterlo`、`generate_done`、`generate_error` |
- * | PRC 解码 | `POST /decode/prc` | （Decode 页） | `decode_prc`、`decode_done`、`decode_error` |
- * | WaterLo 解码 | `POST /decode/waterlo` | （Decode 页） | `decode_waterlo`、`decode_done`、`decode_error` |
+ * | 解码（选项） | `POST /decode` + form（`use_prc` / `use_waterlo` 等） | DecodeView | 同一 `job_id` 下 `decode_prc` / `decode_waterlo`；各分支 `decode_done`（`method`）；`decode_error`（含 `method`） |
  *
  * 连接时机：`App.vue` 根组件 `onMounted` 调用 `initSocket()`，子页面用 `getSocketIdWhenReady()` 取 id。
  */
