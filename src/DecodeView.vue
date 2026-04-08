@@ -78,7 +78,7 @@ import DisplayData from "./components/DisplayData.vue"
 import Subtitle from "./components/Subtitle.vue"
 import { DataAnalysis } from "@element-plus/icons-vue"
 
-const models = ["Stable Diffusion 2.1", "Unstable 3.4"]
+const models = ["sd-research/stable-diffusion-2-1-base", "Unstable 3.4"]
 const decodeTopAnchor = ref<HTMLElement | null>(null)
 const decodeBottomAnchor = ref<{ $el?: HTMLElement } | null>(null)
 
