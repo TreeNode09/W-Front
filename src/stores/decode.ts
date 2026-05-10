@@ -3,10 +3,12 @@ import { defineStore } from "pinia"
 import { computed, ref } from "vue"
 
 export const DECODE_MAX_UPLOAD = 8
+
 export type DecodeResultRow = {
   original: string
   waterlo: string
-  prc: string
+  prcDetect: boolean | null
+  prcDecode: string
 }
 
 export const useDecode = defineStore("decode", () => {

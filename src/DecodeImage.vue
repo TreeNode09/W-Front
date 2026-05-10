@@ -1,8 +1,8 @@
 <template>
   <Step num="2" title="指定数据" :locked="props.locked">
     <template v-if="usePRC">
-      <Subtitle title="密钥 ID"><Key /></Subtitle>
-      <div class="row" style="gap: 10px; margin-top: 6px;">
+      <Subtitle title="密钥 ID" style="margin-top: 5px;"><Key /></Subtitle>
+      <div class="row" style="gap: 10px;">
         <el-input v-model="key" :disabled="locked" placeholder="请输入用于解码的密钥 ID" />
       </div>
     </template>
@@ -12,7 +12,7 @@
       <el-icon><Plus /></el-icon>
     </el-upload>
 
-    <Subtitle title="模型"><Cpu /></Subtitle>
+    <Subtitle title="生成模型"><Cpu /></Subtitle>
     <el-radio-group v-model="model" :disabled="locked">
       <el-radio-button v-for="m in models" :key="m" :value="m" border>{{ m }}</el-radio-button>
     </el-radio-group>

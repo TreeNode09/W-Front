@@ -3,14 +3,14 @@
 
   <Step num="1" title="选择水印选项" row :locked="isBusy">
     <div class="row" style="gap: 20px; margin-bottom: 1px;">
-      <el-switch v-model="usePRC" :disabled="isBusy" active-text="版权信息"/>
+      <el-switch v-model="usePRC" :disabled="isBusy" active-text="来源追溯"/>
       <el-switch v-model="useWaterLo" :disabled="isBusy" active-text="篡改检测"/>
     </div>
   </Step>
 
   <DecodeImage :models="models" :locked="isBusy" />
 
-  <Step ref="decodeBottomAnchor" num="3" title="检测图像" :locked="isBusy">
+  <Step ref="decodeBottomAnchor" num="3" title="检测图像">
     <div class="row" style="justify-content: center; gap: 40px;">
       <DisplayData name="图像总数" unit="张">
         <div style="font-size: 32px; font-weight: bold; color: var(--main);">{{ imageNum }}</div>
@@ -40,23 +40,28 @@
 
     <template v-if="procStatus==='finish'">
       <Subtitle title="检测结果" style="margin-top: 10px;"><DataAnalysis /></Subtitle>
-      <el-table v-if="procStatus==='finish'" :data="resultRows" border style="width: 100%;">
-        <el-table-column label="原图" min-width="1" align="center">
-          <template #default="{ row }">
-            <el-image v-if="row.original" :src="row.original" preview-teleported :preview-src-list="[row.original]"
-              fit="contain" style="width: 100%; height: 100%; padding: 20px;" />
-            <span v-else>--</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="篡改检测" min-width="1" align="center">
-          <template #default="{ row }">
-            <el-image v-if="row.waterlo" :src="row.waterlo" preview-teleported :preview-src-list="[row.waterlo]"
-              fit="contain" style="width: 100%; height: 100%; padding: 20px;" />
-            <span v-else>--</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="版权信息" prop="prc" min-width="1" />
-      </el-table>      
+      <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 8px; font-size: 14px;">
+        <el-card v-for="(row, i) in resultRows" :key="i" :body-style="{padding:'15px'}"
+          style="width: 240px; border-radius: 10px; border-color: var(--pale); box-shadow: var(--shadowDark) 0px 0px 4px;">
+          <div style="margin-bottom: 5px; font-weight: bold;">{{ useWaterLo ? "篡改检测" : "原图" }}</div>
+          <div style="aspect-ratio: 1; display: flex; align-items: center; justify-content: center;">
+            <el-image v-if="cardImageSrc(row)" style="width: 100%; height: 100%" :src="cardImageSrc(row)!"
+              :preview-src-list="cardPreviewList(row)" fit="contain"/>
+            <div v-else style="font-weight: bold;">无法显示！</div>
+          </div>
+          <div v-if="usePRC" class="col" style="justify-content: space-around; margin-top: 5px;">
+            <div style="font-weight: bold;">来源追溯</div>
+            <div class="row" style="gap: 10px;">
+              <div style="font-size: 32px; font-weight: bold; white-space: nowrap;">
+                <span v-if="row.prcDetect === true" style="color: var(--main);">成功</span>
+                <span v-else style="color: var(--el-color-danger)">失败</span>
+              </div>
+              <div style="width: 1px; background-color: var(--main);"></div>
+              <div>{{ row.prcDecode }}</div>
+            </div>
+          </div>
+        </el-card>
+      </div>
     </template>
   </Step>
 </div>
@@ -77,6 +82,30 @@ import Step from "./components/Step.vue"
 import DisplayData from "./components/DisplayData.vue"
 import Subtitle from "./components/Subtitle.vue"
 import { DataAnalysis } from "@element-plus/icons-vue"
+
+function decodeBitsToText(bits: string | null | undefined): string | null {
+  if (bits == null) return null
+  const s = String(bits).trim()
+  if (!s) return null
+  if (s.length % 8 !== 0) return null
+  if (!/^[01]+$/.test(s)) return null
+
+  const out = new Uint8Array(s.length / 8)
+  for (let i = 0; i < s.length; i += 8) {
+    out[i / 8] = parseInt(s.slice(i, i + 8), 2)
+  }
+  if (out.length === 0) return null
+
+  const n = out[0]!
+  if (n > out.length - 1) return null
+
+  const slice = out.subarray(1, 1 + n)
+  try {
+    return new TextDecoder("ascii").decode(slice)
+  } catch {
+    return null
+  }
+}
 
 const models = ["sd-research/stable-diffusion-2-1-base", "Unstable 3.4"]
 const decodeTopAnchor = ref<HTMLElement | null>(null)
@@ -135,8 +164,20 @@ function initResultRows() {
   decode.resultRows = images.value.map((item) => ({
     original: item.url ?? "",
     waterlo: "",
-    prc: "—",
+    prcDetect: null,
+    prcDecode: "—",
   }))
+}
+
+const cardImageSrc = (row: { waterlo: string; original: string }) => {
+  if (row.waterlo) return row.waterlo
+  if (row.original) return row.original
+  return ""
+}
+
+function cardPreviewList(row: { waterlo: string; original: string }) {
+  const list = [row.waterlo, row.original].filter(Boolean)
+  return list.length ? list : [""]
 }
 
 function onButtonClick() {
@@ -218,8 +259,16 @@ const onDecodeDone = (data: DecodeSocketPayload) => {
     const rows = Array.isArray(data.results) ? data.results : []
     rows.forEach((row, i) => {
       if (!decode.resultRows[i]) return
-      const combined = typeof row?.combined === "boolean" ? row.combined : null
-      decode.resultRows[i].prc = combined == null ? "—" : combined ? "是" : "否"
+      const detect = typeof row?.detect === "boolean" ? row.detect : null
+      const bitsRaw = row?.decode_bits
+      const bits = bitsRaw == null ? null : String(bitsRaw)
+      const trace = decodeBitsToText(bits)
+      const traceLabel =
+        trace != null ? trace
+        : bits != null && String(bits).trim() ? "（解码失败）"
+        : "—"
+      decode.resultRows[i].prcDetect = detect
+      decode.resultRows[i].prcDecode = traceLabel
     })
     decode.prcDone = true
   }
