@@ -1,15 +1,20 @@
 <template>
   <Step num="2" title="指定数据" :locked="props.locked">
-    <Subtitle title="图像"><Picture /></Subtitle>
+    <Subtitle title="图像" style="margin-top: 5px;"><Picture /></Subtitle>
     <el-upload v-model:file-list="images" list-type="picture-card" multiple :auto-upload="false" accept="image/*"
       :disabled="locked" :limit="ENCODE_MAX_UPLOAD" :on-exceed="onImageExceed" :on-preview="onPictureCardPreview">
       <el-icon><Plus /></el-icon>
     </el-upload>
 
-    <Subtitle title="模型"><Cpu /></Subtitle>
-    <el-radio-group v-model="model" :disabled="locked">
-      <el-radio-button v-for="m in models" :key="m" :value="m" border>{{ m }}</el-radio-button>
-    </el-radio-group>
+    <div class="row" style="gap: 20px;">
+      <Subtitle title="篡改检测不透明度"><View /></Subtitle>
+      <div class="row" style="align-items: center; gap: 20px; width: 200px; margin-left: 10px;">
+        <el-slider v-model="waterloAlpha" :disabled="locked" :show-tooltip="false"
+          :min="0.002" :max="0.01" :step="0.001" show-stops/>
+        <div style="color: var(--main); font-weight: bold;">{{ waterloAlpha }}</div>
+      </div>
+    </div>
+
   </Step>
 
   <Teleport to="body">
@@ -23,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { Cpu, Picture, Plus } from "@element-plus/icons-vue"
+import { Picture, Plus, View } from "@element-plus/icons-vue"
 import type { UploadProps, UploadRawFile, UploadUserFile } from "element-plus"
 import { genFileId } from "element-plus"
 import { storeToRefs } from "pinia"
@@ -40,7 +45,11 @@ const props = defineProps({
   models: { type: Array<string> },
 })
 
-const { model, images } = storeToRefs(useEncode())
+const { images, useWaterLo, waterloAlpha } = storeToRefs(useEncode())
+
+function formatAlphaTooltip(val: number) {
+  return `α = ${val.toFixed(3)}（约 ${(val * 100).toFixed(1)}%）`
+}
 
 const locked = computed(() => props.locked ?? false)
 
@@ -104,3 +113,9 @@ const onImageExceed = (newFiles: File[], current: UploadUserFile[]) => {
   showWarning("图像数量已达上限", `已保留前 ${ENCODE_MAX_UPLOAD} 张`)
 }
 </script>
+
+<style scoped>
+.el-slider *{
+  transition: none;
+}
+</style>

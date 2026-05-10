@@ -1,16 +1,7 @@
 <template>
   <Step num="3" title="指定数据" :locked="props.locked">
 
-    <template v-if="usePRC">
-      <Subtitle  title="密钥ID"><Key /></Subtitle>
-      <div class="row" style="gap: 10px;">
-        <el-input v-model="key" :disabled="locked" placeholder="首次生成前，请先获取密钥" />
-        <el-button :disabled="locked" :loading="keyLoading" @click="getKey">获取</el-button>
-        <el-button disabled>导入</el-button>
-      </div>      
-    </template>
-
-    <Subtitle title="提示词"><ChatDotSquare /></Subtitle>
+    <Subtitle title="提示词" style="margin-top: 5px;"><ChatDotSquare /></Subtitle>
     <div class="row" style="gap: 10px;">
       <el-input v-model="prompts" class="textarea" type="textarea" :rows="3" :disabled="locked"
         placeholder="可输入多条提示词，或设定数量后点击“随机”，从数据集拉取"/>
@@ -29,17 +20,47 @@
         </div>
       </div>
     </div>
+  
+    <div class="row" style="gap: 20px;">
+      <Subtitle title="生成模型"><Cpu /></Subtitle>
+      <el-radio-group v-model="model" :disabled="locked">
+        <el-radio-button v-for="m in models" :key="m" :value="m" border>{{ m }}</el-radio-button>
+      </el-radio-group>      
+    </div>
 
-    <Subtitle title="模型"><Cpu /></Subtitle>
-    <el-radio-group v-model="model" :disabled="locked">
-      <el-radio-button v-for="m in models" :key="m" :value="m" border>{{ m }}</el-radio-button>
-    </el-radio-group>
+    <div style="height: 1px; margin: 5px;"></div>
+
+    <div v-if="usePRC" class="row" style="gap: 20px;">
+      <Subtitle  title="密钥 ID"><Key /></Subtitle>
+      <div class="row" style="gap: 10px; flex: 1;">
+        <el-input v-model="key" :disabled="locked" placeholder="首次生成前，请先获取密钥" />
+        <el-button :disabled="locked" :loading="keyLoading" @click="getKey">获取</el-button>
+        <el-button disabled>导入</el-button>
+      </div>
+    </div>
+
+    <div v-if="usePRC" class="row" style="gap: 20px;">
+      <Subtitle title="来源追溯信息（可选）"><Document /></Subtitle>
+      <el-input v-model="prcMessage" class="textarea" type="textarea"  placeholder="本次生成的所有图像共用此信息"
+        :rows="1" :disabled="locked" maxlength="63" show-word-limit/>
+    </div>
+
+    <div style="height: 1px; margin: 5px;"></div>
+
+    <div v-if="useWaterLo" class="row" style="gap: 20px;">
+      <Subtitle title="篡改检测不透明度"><View /></Subtitle>
+      <div class="row" style="align-items: center; gap: 20px; width: 200px; margin-left: 10px;">
+        <el-slider v-model="waterloAlpha" :disabled="locked" :show-tooltip="false"
+          :min="0.002" :max="0.01" :step="0.001" show-stops/>
+        <div style="color: var(--main); font-weight: bold;">{{ waterloAlpha }}</div>
+      </div>
+    </div>
 
   </Step>
 </template>
 
 <script setup lang="ts">
-import { ChatDotSquare, Cpu, Key } from "@element-plus/icons-vue"
+import { ChatDotSquare, Cpu, Document, Key, View } from "@element-plus/icons-vue"
 import { storeToRefs } from "pinia"
 import { computed, ref } from "vue"
 
@@ -57,7 +78,7 @@ const props = defineProps({
 
 const locked = computed(() => props.locked ?? false)
 
-const { usePRC, key, prompts, model } = storeToRefs(useEncode())
+const { usePRC, useWaterLo, key, prompts, model, waterloAlpha, prcMessage } = storeToRefs(useEncode())
 
 const keyLoading = ref(false)
 const promptFetchCount = ref(0)
@@ -124,5 +145,9 @@ const getPrompts = () => {
 .textarea :deep(.el-textarea), .textarea :deep(.el-textarea__inner) {
   transition-property: color, background-color, border-color, box-shadow, opacity !important;
   transition-duration: 0.5s;
+}
+
+.el-slider *{
+  transition: none;
 }
 </style>

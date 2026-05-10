@@ -17,7 +17,7 @@
 
     <Step v-if="usePrompt" num="2" title="选择水印类型" row style="flex: 1;" :locked="isBusy">
       <div class="row" style="gap: 20px;">
-        <el-switch v-model="usePRC" :disabled="isBusy" active-text="版权信息"/>
+        <el-switch v-model="usePRC" :disabled="isBusy" active-text="来源追溯"/>
         <el-switch v-model="useWaterLo" :disabled="isBusy" active-text="篡改检测"/>
       </div>
     </Step>
@@ -37,7 +37,7 @@
           style="font-weight: bold; font-size: 32px; color: var(--main);">--</div>
         <div v-else class="row" style="gap: 5px; align-items: center; font-weight: bold; color: var(--main);">
           <template v-if="usePrompt">
-            <div style="font-size: 12px;">生成图像<br>{{usePRC ? "版权信息" : ""}}</div>
+            <div style="font-size: 12px;">生成图像<br>{{usePRC ? "来源追溯" : ""}}</div>
             <div style="font-size: 32px;">{{ prcNum }}</div>
           </template>
           <div v-if="usePrompt && useWaterLo" style="width: 1px; height: 20px; background-color: var(--pale);"></div>
@@ -103,7 +103,7 @@ const encode = useEncode()
 const {
   usePrompt, usePRC, useWaterLo, model, promptNum, imageNum,
   key, prompts, images,
-  prcNum, waterloNum, results
+  prcNum, waterloNum, results, waterloAlpha, prcMessage,
 } = storeToRefs(encode)
 const job = useJob()
 const { procStatus, isBusy } = storeToRefs(job)
@@ -180,6 +180,9 @@ async function startGenerate() {
     const socketId = await getSocketId()
 
     if (usePrompt.value) {
+      const trace = usePRC.value ? prcMessage.value.trim() : ""
+      const messages = trace.length > 0 ? lines!.map(() => trace) : null
+
       const { data, status } = await http.post<{ job_id: string; status: string }>(
         "/generate/prompts",
         {
@@ -189,7 +192,8 @@ async function startGenerate() {
           use_waterlo: useWaterLo.value,
           socket_id: socketId,
           key_id: usePRC.value ? key.value.trim() : null,
-          alpha: 0.005
+          alpha: useWaterLo.value ? waterloAlpha.value : 0.005,
+          messages
         }
       )
       if (status === 202 && data?.job_id) {
@@ -210,7 +214,7 @@ async function startGenerate() {
         if (raw) fd.append("images", raw)
       }
       fd.append("socket_id", socketId)
-      fd.append("alpha", "0.005")
+      fd.append("alpha", String(useWaterLo.value ? waterloAlpha.value : 0.005))
       const { data, status } = await http.post<{ job_id: string; status: string }>(
         "/generate/images", fd
       )

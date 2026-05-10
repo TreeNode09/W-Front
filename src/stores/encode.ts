@@ -27,10 +27,14 @@ export const useEncode = defineStore("encode", () => {
   const waterloNum = ref(0)
   const results = ref<string[]>([])
 
+  const prcMessage = ref("")
+  const waterloAlpha = ref(0.005)
+
   return {
     usePrompt, usePRC, useWaterLo,
     key, prompts, model, images,
     promptNum, imageNum,
-    prcNum, waterloNum, results
+    prcNum, waterloNum, results,
+    prcMessage, waterloAlpha
   }
 })

@@ -79,19 +79,6 @@ export function watchStatus(): () => void {
   }
 }
 
-/**
- * 与后端 Flask-SocketIO（Back.py）的约定 —— 当前只做「全局一条连接 + HTTP 里带 socket_id」。
- * 推送类逻辑后续再按需接。
- *
- * | 操作 | HTTP | 当前前端 | 后续可做（Socket 事件，payload 均含 job_id） |
- * |------|------|----------|-----------------------------------------------|
- * | 提示词生成 | `POST /generate/prompts` + body.socket_id | 发到返回 202 | 先 `generate_prc` 再（若开启）`generate_waterlo`；最后 `generate_done`（`images` base64）、`generate_error` |
- * | 图像只打水印 | `POST /generate/images` + form socket_id | 同上 | 仅 `generate_waterlo`、`generate_done`、`generate_error` |
- * | 解码（选项） | `POST /decode` + form（`use_prc` / `use_waterlo` 等） | DecodeView | 同一 `job_id` 下 `decode_prc` / `decode_waterlo`；各分支 `decode_done`（`method`）；`decode_error`（含 `method`） |
- *
- * 连接时机：`App.vue` 根组件 `onMounted` 调用 `initSocket()`，子页面用 `getSocketIdWhenReady()` 取 id。
- */
-
 let socket: Socket | null = null
 
 export function getSocket(): Socket {
